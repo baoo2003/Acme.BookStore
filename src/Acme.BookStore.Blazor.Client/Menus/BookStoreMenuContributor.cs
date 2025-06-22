@@ -9,6 +9,7 @@ using Volo.Abp.Identity.Blazor;
 using Volo.Abp.SettingManagement.Blazor.Menus;
 using Volo.Abp.TenantManagement.Blazor.Navigation;
 using Volo.Abp.UI.Navigation;
+using Acme.BookStore.Permissions;
 
 namespace Acme.BookStore.Blazor.Client.Menus;
 
@@ -33,7 +34,7 @@ public class BookStoreMenuContributor : IMenuContributor
         }
     }
 
-    private Task ConfigureMainMenuAsync(MenuConfigurationContext context)
+    private async Task ConfigureMainMenuAsync(MenuConfigurationContext context)
     {
         var l = context.GetLocalizer<BookStoreResource>();
 
@@ -47,19 +48,22 @@ public class BookStoreMenuContributor : IMenuContributor
             )
         );
 
-        context.Menu.AddItem(
-            new ApplicationMenuItem(
-                "BooksStore",
-                l["Menu:BookStore"],
-                icon: "fa fa-book"
-            ).AddItem(
-                new ApplicationMenuItem(
-                    "BooksStore.Books",
-                    l["Menu:Books"],
-                    url: "/books"
-                )
-            )
+        var bookStoreMenu = new ApplicationMenuItem(
+            "BooksStore",
+            l["Menu:BookStore"],
+            icon: "fa fa-book"
         );
+
+        context.Menu.AddItem(bookStoreMenu);
+        
+        if (await context.IsGrantedAsync(BookStorePermissions.Books.Default))
+        {
+            bookStoreMenu.AddItem(new ApplicationMenuItem(
+                "BooksStore.Books",
+                l["Menu:Books"],
+                url: "/books"
+            ));
+        }
 
         var administration = context.Menu.GetAdministration();
 
@@ -75,7 +79,8 @@ public class BookStoreMenuContributor : IMenuContributor
         administration.SetSubItemOrder(IdentityMenuNames.GroupName, 2);
         administration.SetSubItemOrder(SettingManagementMenus.GroupName, 3);
 
-        return Task.CompletedTask;
+        //return Task.CompletedTask;
+        return;
     }
 
     private Task ConfigureUserMenuAsync(MenuConfigurationContext context)
