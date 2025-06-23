@@ -1,6 +1,13 @@
-﻿namespace Acme.BookStore;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public static class BookStoreDomainErrorCodes
+namespace Acme.BookStore
 {
-    /* You can add your business exception error codes here, as constants */
+    public static class BookStoreDomainErrorCodes
+    {
+        public const string AuthorAlreadyExists = "BookStore:00001";
+    }
 }
