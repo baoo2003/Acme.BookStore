@@ -3,6 +3,7 @@
 @using Acme.BookStore.Permissions
 @using Microsoft.AspNetCore.Authorization
 @using Volo.Abp.Application.Dtos
+@using Volo.Abp;
 @using Acme.BookStore.Books
 @using Acme.BookStore.Localization
 @using Microsoft.Extensions.Localization
@@ -38,6 +39,9 @@
                 <DataGridColumn TItem="BookDto"
                                 Field="@nameof(BookDto.Name)"
                                 Caption="@L["Name"]"></DataGridColumn>
+                <DataGridColumn TItem="BookDto"
+                                Field="@nameof(BookDto.AuthorName)"
+                                Caption="@L["Author"]"></DataGridColumn>
                 <DataGridColumn TItem="BookDto"
                                 Field="@nameof(BookDto.Type)"
                                 Caption="@L["Type"]">
@@ -95,6 +99,17 @@
                 <Validations @ref="@CreateValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
                     <Validation MessageLocalizer="@LH.Localize">
                         <Field>
+                            <FieldLabel>@L["Author"]</FieldLabel>
+                            <Select TValue="Guid" @bind-SelectedValue="@NewEntity.AuthorId">
+                                @foreach (var author in authorList)
+                                {
+                                    <SelectItem TValue="Guid" Value="@author.Id">
+                                        @author.Name
+                                    </SelectItem>
+                                }
+                                </Select>
+                        </Field>
+                        <Field>
                             <FieldLabel>@L["Name"]</FieldLabel>
                             <TextEdit @bind-Text="@NewEntity.Name">
                                 <Feedback>
@@ -148,6 +163,17 @@
                 <Validations @ref="@EditValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
                     <Validation MessageLocalizer="@LH.Localize">
                         <Field>
+                            <FieldLabel>@L["Author"]</FieldLabel>
+                            <Select TValue="Guid" @bind-SelectedValue="@EditingEntity.AuthorId">
+                                @foreach (var author in authorList)
+                                {
+                                    <SelectItem TValue="Guid" Value="@author.Id">
+                                        @author.Name
+                                    </SelectItem>
+                                }
+                            </Select>
+                        </Field>
+                        <Field>
                             <FieldLabel>@L["Name"]</FieldLabel>
                             <TextEdit @bind-Text="@EditingEntity.Name">
                                 <Feedback>
@@ -191,10 +217,29 @@
 
 @code
 {
+    IReadOnlyList<AuthorLookupDto> authorList = Array.Empty<AuthorLookupDto>();
+
     public Books()
     {
         CreatePolicyName = BookStorePermissions.Books.Create;
         UpdatePolicyName = BookStorePermissions.Books.Edit;
         DeletePolicyName = BookStorePermissions.Books.Delete;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        authorList = (await AppService.GetAuthorLookupAsync()).Items;
+    }
+
+    protected override async Task OpenCreateModalAsync()
+    {
+        if (!authorList.Any())
+        {
+            throw new UserFriendlyException(message: L["AnAuthorIsRequiredForCreatingBook"]);
+        }
+        
+        await base.OpenCreateModalAsync();
+        NewEntity.AuthorId = authorList.First().Id;
     }
 }

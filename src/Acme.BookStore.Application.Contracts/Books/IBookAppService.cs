@@ -14,6 +14,7 @@ namespace Acme.BookStore.Books
         Guid, //PK of entity
         PagedAndSortedResultRequestDto,
         CreateUpdateBookDto>
-    {       
+    {
+        Task<ListResultDto<AuthorLookupDto>> GetAuthorLookupAsync();
     }
 }

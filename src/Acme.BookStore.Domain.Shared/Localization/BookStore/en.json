@@ -25,6 +25,7 @@
 
     "NewBook": "New book",
     "NewAuthor": "New author",
+    "AnAuthorIsRequiredForCreatingBook": "An author is required to create a book",
 
     "Enum:BookType.0": "Undefined",
     "Enum:BookType.1": "Adventure",
