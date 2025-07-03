@@ -12,6 +12,9 @@
     <link href="main.css" rel="stylesheet"/>
     <!--/ABP:Styles-->
     <link href="Acme.BookStore.Blazor.Client.styles.css" rel="stylesheet"/>
+    
+
+    <link href=@AppendVersion("_content/DevExpress.Blazor.Themes/blazing-berry.bs5.min.css") rel="stylesheet" />
 
     <!-- <TEMPLATE-REMOVE IF-NOT='PWA'> -->
     <link href="manifest.json" rel="manifest" />
@@ -48,3 +51,7 @@
     <!-- </TEMPLATE-REMOVE> -->
 </body>
 </html>
+
+@code {
+    private string AppendVersion(string path) => $"{path}?v={typeof(DevExpress.Blazor.ResourcesConfigurator).Assembly.GetName().Version}";
+}

@@ -8,6 +8,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.HttpApi;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Acme.BookStore;
 
@@ -24,7 +25,7 @@ public class BookStoreHttpApiModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        ConfigureLocalization();
+        ConfigureLocalization();        
     }
 
     private void ConfigureLocalization()

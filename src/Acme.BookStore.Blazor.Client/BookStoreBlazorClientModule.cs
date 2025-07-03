@@ -41,6 +41,7 @@ public class BookStoreBlazorClientModule : AbpModule
         ConfigureRouter(context);
         ConfigureMenu(context);
         ConfigureAutoMapper(context);
+        context.Services.AddDevExpressBlazor();
     }
 
     private void ConfigureRouter(ServiceConfigurationContext context)

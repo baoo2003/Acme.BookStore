@@ -114,5 +114,36 @@ namespace Acme.BookStore.Books
 
             return $"book.{sorting}";
         }
+
+        public async Task<PagedResultDto<BookDto>> GetListAsyncWithAuthorId(PagedAndSortedResultRequestDto input, Guid id)
+        {
+            var queryable = await Repository.GetQueryableAsync();
+
+            var query = from book in queryable
+                        where book.AuthorId == id
+                        join author in await _authorRepository.GetQueryableAsync() on book.AuthorId equals author.Id
+                        select new { book, author };
+
+            query = query
+                .OrderBy(NormalizeSorting(input.Sorting))
+                .Skip(input.SkipCount)
+                .Take(input.MaxResultCount);
+
+            var queryResult = await AsyncExecuter.ToListAsync(query);
+
+            var bookDtos = queryResult.Select(x =>
+            {
+                var bookDto = ObjectMapper.Map<Book, BookDto>(x.book);
+                bookDto.AuthorName = x.author.Name;
+                return bookDto;
+            }).ToList();
+
+            var totalCount = await Repository.CountAsync(x => x.AuthorId == id);
+
+            return new PagedResultDto<BookDto>(
+                totalCount,
+                bookDtos
+            );
+        }
     }
 }

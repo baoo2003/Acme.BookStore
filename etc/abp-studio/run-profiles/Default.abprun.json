@@ -1,0 +1,21 @@
+{
+  "folders": {
+    "items": {
+      "Acme.BookStore": {}
+    }
+  },
+  "applications": {
+    "Acme.BookStore.HttpApi.Host": {
+      "type": "dotnet-project",
+      "path": "../../../src/Acme.BookStore.HttpApi.Host/Acme.BookStore.HttpApi.Host.csproj",
+      "launchUrl": "https://localhost:44381",
+      "folder": "Acme.BookStore"
+    },
+    "Acme.BookStore.Blazor": {
+      "type": "dotnet-project",
+      "path": "../../../src/Acme.BookStore.Blazor/Acme.BookStore.Blazor.csproj",
+      "launchUrl": "https://localhost:44388",
+      "folder": "Acme.BookStore"
+    }
+  }
+}

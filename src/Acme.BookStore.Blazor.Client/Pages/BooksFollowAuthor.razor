@@ -1,0 +1,290 @@
+﻿@page "/books-follow-author/{id:guid?}"
+@attribute [Authorize(BookStorePermissions.Books.Default)]
+@using Acme.BookStore.Permissions
+@using Microsoft.AspNetCore.Authorization
+@using Volo.Abp.Application.Dtos
+@using Volo.Abp;
+@using Acme.BookStore.Books
+@using Acme.BookStore.Authors
+@using Acme.BookStore.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<BookStoreResource> L
+@inject AbpBlazorMessageLocalizerHelper<BookStoreResource> LH
+@inject NavigationManager NavigationManager
+@inherits AbpCrudPageBase<IBookAppService, BookDto, Guid, PagedAndSortedResultRequestDto, CreateUpdateBookDto>
+@inject IAuthorAppService AuthorAppService
+@inject Blazorise.IMessageService MessageService
+<style>
+    .grid-icon {
+        background-size: contain;
+        mask-repeat: no-repeat;
+        -webkit-mask-repeat: no-repeat;
+        background-position: center center;
+        background-color: currentColor;
+        height: 16px;
+        width: 16px;
+    }
+
+    .grid-icon-add {
+        -webkit-mask-image: url("../images/plus-circle-fill.svg");
+        mask-image: url("../images/plus-circle-fill.svg");
+    }
+
+    .grid-icon-add:before {
+
+    .grid-icon-delete {
+        -webkit-mask-image: url("../images/trash-fill.svg");
+        mask-image: url("../images/trash-fill.svg");
+    }    
+</style>
+<Card>
+    <CardHeader>
+        <Row Class="justify-content-between">
+            <Column ColumnSize="ColumnSize.IsAuto">
+                <h2>Author Details</h2>
+            </Column>
+            <Column ColumnSize="ColumnSize.IsAuto">
+                <Button Color="Color.Primary"
+                        Type="@ButtonType.Submit"
+                        PreventDefaultOnSubmit="true"
+                        Clicked="SaveAuthor">
+                    @L["Save"]
+                </Button>
+            </Column>
+        </Row>
+    </CardHeader>
+    <CardBody>
+        <div>
+            <Label>Author Info</Label>
+        </div>
+        @if (SelectedAuthor != null)
+        {
+            <label class="demo-text cw-320 mb-1">
+                Name
+            </label>
+            <DxTextBox Text="@SelectedAuthor.Name"
+                       TextExpression="@(() => SelectedAuthor.Name)"
+                       TextChanged="@(async (newValue) => {
+                            SelectedAuthor.Name = newValue;
+                            IsDataEntryChanged = true;                        
+               })" BindValueMode="BindValueMode.OnDelayedInput" InputDelay="600"
+                       InputCssClass="focus-value"
+                       ShowValidationIcon="true">
+            </DxTextBox>
+            <Div Class="">
+                <label class="demo-text cw-320 mb-1">
+                    Birth Date
+                </label>
+                <DxDateEdit Date="@SelectedAuthor.BirthDate"
+                            DateExpression="@(() => SelectedAuthor.BirthDate)"
+                            DateChanged="@(async (DateTime newValue) => {
+                            SelectedAuthor.BirthDate = newValue;
+                            IsDataEntryChanged = true;
+                })"
+                            Format="dd/MM/yyyy"
+                            DisplayFormat="dd/MM/yyyy"
+                            InputCssClass="focus-value"
+                            ShowValidationIcon="true" 
+                            />
+            </Div>
+        }
+        else if (authorListDto == null || !authorListDto.Any())
+        {
+            <div class="alert alert-warning">No authors found. Please add an author first.</div>
+        }
+        else
+        {
+            <div>Loading author info...</div>
+        }        
+        <Div>
+            <label class="demo-text cw-320 mb-1">
+                @if (SelectedAuthor != null)
+                {
+                    @L["BooksFollowAuthor", SelectedAuthor.Name]
+                }
+            </label>
+            <DxGrid @ref="Grid"
+                    PageSize="12"
+                    Data="BookList"
+                    KeyFieldName="Id"
+                    ValidationEnabled="false"
+                    EditMode="GridEditMode.EditCell"
+                    EditModelSaving="Grid_EditModelSaving"
+                    DataItemDeleting="Grid_DataItemDeleting"
+                    CustomizeEditModel="Grid_CustomizeEditModel"
+                    ColumnResizeMode="GridColumnResizeMode.NextColumn"
+                    TextWrapEnabled="false"
+                    HighlightRowOnHover="true">
+                <Columns>
+                    <DxGridDataColumn FieldName="Name" Caption="@L["Name"]" MinWidth="150" />
+                    <DxGridDataColumn FieldName="Type" Caption="@L["Type"]" MinWidth="100" />
+                    <DxGridDataColumn FieldName="PublishDate" Caption="@L["PublishDate"]" MinWidth="120" />
+                    <DxGridDataColumn FieldName="Price" Caption="@L["Price"]" MinWidth="80" />
+                    <DxGridDataColumn FieldName="CreationTime" Caption="@L["CreationTime"]" MinWidth="180" />
+
+                    <DxGridCommandColumn Width="30px">
+                        <HeaderTemplate>
+                            <DxButton IconCssClass="grid-icon grid-icon-add"
+                                      RenderStyle="ButtonRenderStyle.Link"
+                                      aria-label="Add"
+                                      style="padding: 0;"
+                                      Click="@(() => Grid.StartEditNewRowAsync())" />
+                        </HeaderTemplate>
+                        <CellDisplayTemplate>
+                            <div class="grid-cell-align-center">
+                                <DxButton IconCssClass="grid-icon grid-icon-delete"
+                                          CssClass="grid-delete-btn"
+                                          RenderStyle="ButtonRenderStyle.Link"
+                                          aria-label="Delete"
+                                          style="padding: 0;"
+                                          Click="@(() => Grid.ShowRowDeleteConfirmation(context.VisibleIndex))" />
+                            </div>
+                        </CellDisplayTemplate>
+                        <CellEditTemplate>
+                            <div class="grid-cell-align-center">
+                                <DxButton Enabled="false"
+                                          CssClass="grid-disabled-button"
+                                          IconCssClass="grid-icon grid-icon-delete"
+                                          aria-label="Delete"
+                                          style="padding: 0;"
+                                          RenderStyle="ButtonRenderStyle.Link" />
+                            </div>
+                        </CellEditTemplate>
+                    </DxGridCommandColumn>
+                </Columns>
+            </DxGrid>
+        </Div>            
+    </CardBody>
+</Card>
+
+@code
+{
+    [Parameter]
+    public Guid Id { get; set; }
+
+    IGrid Grid { get; set; }
+
+    AuthorDto SelectedAuthor { get; set; }
+
+    public bool IsDataEntryChanged = false;
+
+    IReadOnlyList<AuthorLookupDto> authorList = Array.Empty<AuthorLookupDto>();
+
+    IReadOnlyList<AuthorDto> authorListDto = Array.Empty<AuthorDto>();
+
+    IEnumerable<BookDto> BookList = Array.Empty<BookDto>();
+
+    public BooksFollowAuthor()
+    {
+        CreatePolicyName = BookStorePermissions.Books.Create;
+        UpdatePolicyName = BookStorePermissions.Books.Edit;
+        DeletePolicyName = BookStorePermissions.Books.Delete;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        authorList = (await AppService.GetAuthorLookupAsync()).Items;
+        authorListDto = (await AuthorAppService.GetListAsync(new GetAuthorListDto())).Items;
+        if (authorListDto == null || !authorListDto.Any())
+        {
+            SelectedAuthor = null;
+            return;
+        }
+        if (Id == Guid.Empty)
+        {
+            SelectedAuthor = authorListDto.First();
+            Id = SelectedAuthor.Id;
+        }
+        else
+        {
+            SelectedAuthor = await AuthorAppService.GetAsync(Id);
+        }
+        await UpdateDataAsync();
+    }
+
+    protected override async Task OpenCreateModalAsync()
+    {
+        if (!authorList.Any())
+        {
+            throw new UserFriendlyException(message: L["AnAuthorIsRequiredForCreatingBook"]);
+        }
+
+        await base.OpenCreateModalAsync();
+        NewEntity.AuthorId = authorList.First().Id;
+    }  
+
+    protected async Task SaveAuthor()
+    {
+        if (IsDataEntryChanged)
+        {
+            await AuthorAppService.UpdateAsync(Id, ObjectMapper.Map<AuthorDto, UpdateAuthorDto>(SelectedAuthor));
+            await MessageService.Success(L["SavedSuccessfully"].Value, "Update Author");
+        }
+        NavigationManager.NavigateTo("/authors");
+    }
+
+    RenderFragment GetSelectedItemDescription()
+    {
+        if (SelectedAuthor != null)
+        {
+            return @<text>
+        Selected Item: (
+        @GetFieldDescription(nameof(AuthorDto.Name), SelectedAuthor.Name),
+        @GetFieldDescription(nameof(AuthorDto.BirthDate), SelectedAuthor.BirthDate)        
+        )
+    </text>;
+        }
+        return @<text>Selected Item: <b>null</b></text>;
+    }
+    RenderFragment GetFieldDescription(string fieldName, object value)
+    {
+        return @<text>@fieldName: <b>@value</b></text>;
+    }
+
+    void Grid_CustomizeEditModel(GridCustomizeEditModelEventArgs e)
+    {
+        if (e.IsNew && e.EditModel is BookDto newBook)
+        {
+            newBook.Name = "";
+            newBook.Type = BookType.Undefined;
+            newBook.PublishDate = DateTime.Today;
+            newBook.Price = 0;
+            newBook.AuthorId = SelectedAuthor?.Id ?? Guid.Empty;
+        }
+    }
+    async Task Grid_EditModelSaving(GridEditModelSavingEventArgs e)
+    {
+        if (e.EditModel is BookDto editableBook)
+        {
+            var createOrUpdate = new CreateUpdateBookDto
+            {
+                Name = editableBook.Name,
+                Type = editableBook.Type,
+                PublishDate = editableBook.PublishDate,
+                Price = editableBook.Price,
+                AuthorId = editableBook.AuthorId
+            };
+            if (e.IsNew)
+            {
+                await AppService.CreateAsync(createOrUpdate);
+            }
+            else if (e.DataItem is BookDto book)
+            {
+                await AppService.UpdateAsync(book.Id, createOrUpdate);
+            }
+            await UpdateDataAsync();
+        }
+    }
+
+    async Task Grid_DataItemDeleting(GridDataItemDeletingEventArgs e)
+    {        
+        await AppService.DeleteAsync(((BookDto)e.DataItem).Id);
+        await UpdateDataAsync();
+    }
+
+    async Task UpdateDataAsync()
+    {
+        BookList = (await AppService.GetListAsyncWithAuthorId(new PagedAndSortedResultRequestDto(), Id)).Items;
+    }
+}
